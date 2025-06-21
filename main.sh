@@ -37,6 +37,15 @@ function Main() {
             SelectedPackage=$2
             GetPackageVersions
         ;;
+        help)
+            echo "Commands:
+cpm install (package) (version) - Installs package to ServerRoot/mods/
+cpm uninstall (package) - Uninstalls package from ServerRoot/mods/
+cpm info (package) - Gets information about package in JSON format
+cpm init - Initialises a ChiselPM configuration in your server
+cpm versions (package) - Gets list of the package's versions in JSON format
+"
+        ;;
         *)
             LogFail "No such command as $1"
     esac
