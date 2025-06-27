@@ -76,7 +76,7 @@ function InitialiseChiselServer {
 }
 
 function InstallPackage {
-    IsRunningInServer                    || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
+    IsRunningInServer                     || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
     SelectedPackage=$1
     SelectedVersion=$2
     if [[ $SelectedPackage == "" ]]; then
