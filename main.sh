@@ -79,13 +79,18 @@ function InstallPackage {
     IsRunningInServer                     || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
     SelectedPackage=$1
     SelectedVersion=$2
+
+    if [[ $2 == "" ]]; then
+        SelectedVersion=$(GetLatestPackageVersion)
+    fi
+
     if [[ $SelectedPackage == "" ]]; then
         LogFail "Please specify a package."
     fi
 
-    if [[ $SelectedVersion == "" ]]; then
-        LogFail "Please specify a package version. You can see the package versions with the \"versions\" subcommand."
-    fi
+#   if [[ $SelectedVersion == "" ]]; then
+#       LogFail "Please specify a package version. You can see the package versions with the \"versions\" subcommand."
+#   fi
 
     if [[ $(PackageExists $SelectedPackage) != "NONEXISTENT" ]]; then # If it is confirmed
         LogFail "Package $SelectedPackage already exists"
@@ -173,6 +178,13 @@ function GetPackageVersions {
         LogFail "Please specify a package."
     fi
     curl https://api.modrinth.com/v2/project/$SelectedPackage/version | jq -r | less
+}
+
+function GetLatestPackageVersion {
+    if [[ $SelectedPackage == "" ]]; then
+        LogFail "Please specify a package."
+    fi
+    curl https://api.modrinth.com/v2/project/$SelectedPackage/version | jq -r --arg version "$ServerVersion" '.[] | select(.game_versions[] == $version) | .version_number' | head -n1
 }
 
 function GetPackageDependencies {
