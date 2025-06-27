@@ -1,8 +1,13 @@
 #!/bin/bash
 
-export ServerVersion
+#export ServerVersion
 export ServerRoot=$(dirname $0)
 source $ServerRoot/cpm.conf
+
+if [[ ServerModFolder == "" ]]; then
+    export ServerModFolder=$ServerRoot/mods/
+fi
+
 
 
 txtblk=$(tput setaf 0) # Black
@@ -17,8 +22,8 @@ txtreg=$(tput sgr0)    # Normal
 
 
 function Main() {
-    command -v wget || LogFail "Command wget not found."
-    command -v less || LogFail "Command less not found."
+    command -v wget>/dev/null || LogFail "Command wget not found."
+    command -v less>/dev/null || LogFail "Command less not found."
     case $1 in 
         install)
             InstallPackage $2 $3
@@ -37,18 +42,28 @@ function Main() {
             SelectedPackage=$2
             GetPackageVersions
         ;;
-        help)
+        dependencies)
+            SelectedPackage=$2
+            GetPackageDependencies
+        ;;
+        help|"--help")
             echo "Commands:
-cpm install (package) (version) - Installs package to ServerRoot/mods/
-cpm uninstall (package) - Uninstalls package from ServerRoot/mods/
+cpm install (package) (version) - Installs package to $ServerModFolder
+cpm uninstall (package) - Uninstalls package from $ServerModFolder
 cpm info (package) - Gets information about package in JSON format
 cpm init - Initialises a ChiselPM configuration in your server
 cpm versions (package) - Gets list of the package's versions in JSON format
+cpm dependencies (package) - Gets list of the package's dependencies
+cpm help/--help - Show this help message
 "
         ;;
         *)
-            LogFail "No such command as $1"
+            LogFail "No such command as $1. Run cpm help or --help for command list."
     esac
+}
+
+function GetFabric {
+    echo "Not implemented yet"
 }
 
 function InitialiseChiselServer {
@@ -76,11 +91,15 @@ function InstallPackage {
         LogFail "Package $SelectedPackage already exists"
     fi
     GET>/dev/null;
-    PackageWorksOnServer                 || LogFail "The package requested does not work on servers." 
-    PackageIsCompatibleWithServer        || LogFail "The package requested is not compatible with the server version."
-    PackageVersionIsCompatibleWithServer || LogFail "The version requested is not compatible with the server version."
+    PackageWorksOnServer                  || LogFail "The package requested does not work on servers." 
+    PackageIsCompatibleWithServer         || LogFail "The package requested is not compatible with the server version."
+    PackageVersionIsCompatibleWithServer  || LogFail "The version requested is not compatible with the server version."
+    PackageIsCompatibleWithServerSoftware || LogFail "The package requested is not compatible with the server software."
+    for word in $(GetPackageDependencies); do
+        InstallPackage $word || Log i $SelectedPackage "Failed to install dependency, as it may already be installed or unavailable."
+    done
     Log i $SelectedPackage "Downloading package"
-    wget $(GetPackageFileURLGivenVersion) -qO $ServerRoot/mods/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
+    wget $(GetPackageFileURLGivenVersion) -qO $ServerModFolder/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
     Log i $SelectedPackage "Package $SelectedPackage is now installed."
 }
 
@@ -91,9 +110,9 @@ function RemovePackage {
     IsRunningInServer || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
     SelectedPackage=$1
     PackageExists $SelectedPackage || LogFail "Package $SelectedPackage does not exist."
-    echo "File(s) to be removed from $ServerRoot/mods/:
-        $(ls $ServerRoot/mods | grep $SelectedPackage_)"
-    read -pr "Are you sure you want to remove $SelectedPackage from the server? (y/n)" UninstallConfirmation
+    echo "File(s) to be removed from $ServerModFolder:
+        $(ls $ServerModFolder | grep ${SelectedPackage}_)"
+    read -p "Are you sure you want to remove $SelectedPackage from the server? (y/n) " UninstallConfirmation
     case $UninstallConfirmation in
         "y"|"Y"|"yes"|"YES")
             true
@@ -134,8 +153,12 @@ function PackageVersionIsCompatibleWithServer {
     curl https://api.modrinth.com/v2/project/$SelectedPackage/version | jq -r ".[].game_versions[]" | grep $ServerVersion
 }
 
+function PackageIsCompatibleWithServerSoftware {
+    curl https://api.modrinth.com/v2/project/better-chat | jq -r ".loaders[]" | grep $ServerSoftware
+}
+
 function PackageExists {
-    ls $ServerRoot/mods | grep -E "^${1}_[^_]+\.jar$" || echo "NONEXISTENT"
+    ls $ServerModFolder | grep -E "^${1}_[^_]+\.jar$" || echo "NONEXISTENT"
 }
 
 function GetPackageInformation {
@@ -149,7 +172,14 @@ function GetPackageVersions {
     if [[ $SelectedPackage == "" ]]; then
         LogFail "Please specify a package."
     fi
-    curl https://api.modrinth.com/v2/project/sodium/version | jq -r | less
+    curl https://api.modrinth.com/v2/project/$SelectedPackage/version | jq -r | less
+}
+
+function GetPackageDependencies {
+    if [[ $SelectedPackage == "" ]]; then
+        LogFail "Please specify a package."
+    fi
+    curl https://api.modrinth.com/v2/project/$SelectedPackage/dependencies | jq -r ".projects[].slug"
 }
 
 function IsRunningInServer {
