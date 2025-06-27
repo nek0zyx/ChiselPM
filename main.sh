@@ -4,8 +4,8 @@
 export ServerRoot=$(dirname $0)
 source $ServerRoot/cpm.conf
 
-if [[ ServerModFolder == "" ]]; then
-    export ServerModFolder=$ServerRoot/mods/
+if [[ $ServerModFolder == "" ]]; then
+    export ServerModFolder=${ServerRoot}/mods/
 fi
 
 
