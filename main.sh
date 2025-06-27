@@ -154,7 +154,7 @@ function PackageVersionIsCompatibleWithServer {
 }
 
 function PackageIsCompatibleWithServerSoftware {
-    curl https://api.modrinth.com/v2/project/better-chat | jq -r ".loaders[]" | grep $ServerSoftware
+    curl https://api.modrinth.com/v2/project/$SelectedPackage | jq -r ".loaders[]" | grep $ServerSoftware
 }
 
 function PackageExists {
