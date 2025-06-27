@@ -109,11 +109,11 @@ function InstallPackage {
 }
 
 function RemovePackage {
+    SelectedPackage=$1
     if [[ $SelectedPackage == "" ]]; then
         LogFail "Please specify a package."
     fi
     IsRunningInServer || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
-    SelectedPackage=$1
     PackageExists $SelectedPackage || LogFail "Package $SelectedPackage does not exist."
     echo "File(s) to be removed from $ServerModFolder:
         $(ls $ServerModFolder | grep ${SelectedPackage}_)"
@@ -129,6 +129,20 @@ function RemovePackage {
     Log r $SelectedPackage "Deleting file"
     rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar
     Log r $SelectedPackage "File deleted."
+}
+
+function RemovePackage.Update {
+    SelectedPackage=$1
+    if [[ $SelectedPackage == "" ]]; then
+        LogFail "Please specify a package."
+    fi
+    IsRunningInServer || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
+    PackageExists $SelectedPackage || LogFail "Package $SelectedPackage does not exist."
+    echo "File(s) to be removed from $ServerModFolder:
+        $(ls $ServerModFolder | grep ${SelectedPackage}_)"
+    Log u "with $SelectedPackage" "Deleting file"
+    rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar
+    Log u "with $SelectedPackage" "File deleted."
 }
 
 function GET {
@@ -208,6 +222,9 @@ Log() {
         ;;
         r)
             lmsg_one="Removing package"
+        ;;
+        u)
+            lmsg_one="Updating server state"
         ;;
     esac
     lmsg_two=$2
