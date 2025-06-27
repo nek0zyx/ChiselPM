@@ -24,6 +24,7 @@ txtreg=$(tput sgr0)    # Normal
 function Main() {
     command -v wget>/dev/null || LogFail "Command wget not found."
     command -v less>/dev/null || LogFail "Command less not found."
+    command -v jq  >/dev/null || LogFail "Command jq not found."
     case $1 in 
         install)
             InstallPackage $2 $3
