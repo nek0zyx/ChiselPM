@@ -71,8 +71,8 @@ function InitialiseChiselServer {
         LogFail "Chisel is already here."
         exit 1
     fi
-    printf "ServerVersion=\n" > $ServerRoot/cpm.conf
-    echo "-- Modify cpm.conf and specify your server version."
+    printf "ServerVersion=\nServerSoftware=\n" > $ServerRoot/cpm.conf
+    echo "-- Modify cpm.conf and change the values accordingly."
 }
 
 function InstallPackage {
