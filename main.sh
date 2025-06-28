@@ -192,6 +192,8 @@ function InitialiseChiselServer {
         ;;
     esac
 
+    mkdir -pv "$ServerRoot"/world/datapacks
+
     printf "ServerVersion=%s\nServerSoftware=%s\n" "$ServerVersion" "$ServerSoftware" > "$ServerRoot"/cpm.conf
     echo "-- Generated config. Modify cpm.conf and change the values accordingly, if you want to make any tweaks."
 }
@@ -230,9 +232,17 @@ function InstallPackage {
         SelectedVersion=$(GetLatestPackageVersion)
     fi
     
+    IsDatapack=true
+    PackageIsDatapack || export IsDatapack=false
+
     DependencyInstaller
     Log i "$SelectedPackage" p "Downloading package"
-    wget "$(GetPackageFileURLGivenVersion)" -qO "$ServerModFolder"/"${SelectedPackage}"_"${SelectedVersion}".jar || LogFail "Failed either getting file, or writing it to the mods folder."
+
+    if [[ $IsDatapack == "true" ]]; then
+        wget "$(GetPackageFileURLGivenVersion)" -qO "$ServerRoot"/world/datapacks/"${SelectedPackage}"_"${SelectedVersion}".zip || LogFail "Failed either getting file, or writing it to the world/datapacks/ folder."
+    else
+        wget "$(GetPackageFileURLGivenVersion)" -qO "$ServerModFolder"/"${SelectedPackage}"_"${SelectedVersion}".jar || LogFail "Failed either getting file, or writing it to the mods folder."
+    fi
     Log i "$SelectedPackage" o "Package $SelectedPackage is now installed."
 }
 
@@ -291,7 +301,7 @@ function RemovePackage {
     IsRunningInServer || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
     PackageExists "$SelectedPackage" || LogFail "Package $SelectedPackage does not exist."
     echo "File(s) to be removed from $ServerModFolder:
-        $(ls "$ServerModFolder" | grep "${SelectedPackage}"_)"
+        $(ls "$ServerModFolder" "$ServerRoot/world/datapacks/" | grep "${SelectedPackage}"_)"
     read -rp "Are you sure you want to remove $SelectedPackage from the server? (y/n) " UninstallConfirmation
     case $UninstallConfirmation in
         "y"|"Y"|"yes"|"YES")
@@ -302,7 +312,9 @@ function RemovePackage {
         ;;
     esac
     Log r "$SelectedPackage" p "Deleting file"
-    rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar
+    RemoveFileAltogether() {
+        rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar || rm -v "$ServerRoot"/world/datapacks/"${SelectedPackage}"_*.zip || LogFail "Failed to remove file(s)"
+    }
     Log r "$SelectedPackage" o "File deleted."
 }
 
@@ -326,6 +338,10 @@ function GET {
 
 function GetPackageFileURLGivenVersion {
     curl https://api.modrinth.com/v2/project/"$SelectedPackage"/version/"$SelectedVersion" | jq -r ".files[].url"
+}
+
+function PackageIsDatapack {
+    curl https://api.modrinth.com/v2/project/"$SelectedPackage" | jq -r ".loaders[]" | grep "datapack"
 }
 
 function PackageWorksOnServer {
@@ -352,7 +368,7 @@ function PackageIsCompatibleWithServerSoftware {
 }
 
 function PackageExists {
-    ls "$ServerModFolder" | grep -E "^${1}_[^_]+\.jar$" || echo "NONEXISTENT"
+    ls "$ServerModFolder" "$ServerRoot/world/datapacks/" | grep -E "^${1}_[^_]+\.(jar|zip)$" || echo "NONEXISTENT"
 }
 
 function GetPackageInformation {
