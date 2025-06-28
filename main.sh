@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #export ServerVersion
+echo "-- The ChiselPM executable code is designed to be at the root of your server's folder. Setting ServerRoot to $(dirname $0)"
 export ServerRoot=$(dirname $0)
 source $ServerRoot/cpm.conf
 
@@ -29,6 +30,9 @@ function Main() {
         install)
             InstallPackage $2 $3
         ;;
+        install-fabric)
+            GetFabric $2 $3 $4
+        ;;
         remove|uninstall)
             RemovePackage $2
         ;;
@@ -51,6 +55,7 @@ function Main() {
             echo "Commands:
 cpm install (package) (version) - Installs package to $ServerModFolder
 cpm uninstall (package) - Uninstalls package from $ServerModFolder
+cpm install-fabric (minecraft-version) (loader-version) (installer-version) - Installs Fabric Server to the root of the server. If unsure on an argument/option, use \"\" to skip it. 
 cpm info (package) - Gets information about package in JSON format
 cpm init - Initialises a ChiselPM configuration in your server
 cpm versions (package) - Gets list of the package's versions in JSON format
@@ -64,7 +69,81 @@ cpm help/--help - Show this help message
 }
 
 function GetFabric {
-    echo "Not implemented yet"
+    MinecraftVersion=$1
+    FabricLoaderVersion=$2
+    FabricInstallerVersion=$3
+    while [[ $MinecraftVersion == "" ]]; do
+        read -p "Enter a valid Minecraft version: (type h for a list of versions): " MinecraftVersion
+        case $MinecraftVersion in
+            h)
+                curl https://meta.fabricmc.net/v2/versions/game/ | jq -r ".[].version" | less
+            ;;
+            *)
+                curl https://meta.fabricmc.net/v2/versions/game/ | jq -r ".[].version" | grep $MinecraftVersion || unset MinecraftVersion
+                if [[ -z $MinecraftVersion ]]; then
+                    read -p "Please select a valid Minecraft version. Press enter to continue. " NOTHING
+                    echo "$NOTHING">/dev/null
+                else
+                    MCVVerified=true
+                fi
+            ;;
+        esac
+    done
+
+    while [[ $FabricLoaderVersion == "" ]]; do
+        read -p "Enter a valid Fabric Loader version: (type h for a list of versions): " FabricLoaderVersion
+        case $FabricLoaderVersion in
+            h)
+                curl https://meta.fabricmc.net/v2/versions/loader/ | jq -r ".[].version" | less
+            ;;
+            *)
+                curl https://meta.fabricmc.net/v2/versions/loader/ | jq -r ".[].version" | grep $FabricLoaderVersion || unset FabricLoaderVersion
+                if [[ -z $MinecraftVersion ]]; then
+                    read -p "Please select a valid Fabric Loader version. Press enter to continue. " NOTHING
+                    echo "$NOTHING">/dev/null
+                else
+                    FLVVerified=true
+                fi
+            ;;
+        esac
+    done
+
+    while [[ $FabricInstallerVersion == "" ]]; do
+        read -p "Enter a valid Fabric Installer version: (type h for a list of versions): " FabricInstallerVersion
+        case $FabricInstallerVersion in
+            h)
+                curl https://meta.fabricmc.net/v2/versions/installer/ | jq -r ".[].version" | less
+            ;;
+            *)
+                curl https://meta.fabricmc.net/v2/versions/installer/ | jq -r ".[].version" | grep $FabricInstallerVersion || unset FabricInstallerVersion
+                if [[ -z $MinecraftVersion ]]; then
+                    read -p "Please select a valid Fabric Installer version. Press enter to continue. " NOTHING
+                    echo "$NOTHING">/dev/null
+                else
+                    FIVVerified=true
+                fi
+            ;;
+        esac
+    done
+
+    if [[ $MCVVerified != "true" ]]; then
+        Log i FabricMC p "Verifying if Minecraft version $MinecraftVersion exists..."
+        curl https://meta.fabricmc.net/v2/versions/game/ | jq -r ".[].version" | grep $FabricLoaderVersion || LogFail "Minecraft version $MinecraftVersion supporting FabricMC does NOT exist!"
+    elif [[ $FLVVerified != "true" ]]; then
+        Log i FabricMC p "Verifying if Fabric loader version $FabricLoaderVersion exists..."
+        curl https://meta.fabricmc.net/v2/versions/loader/ | jq -r ".[].version" | grep $FabricLoaderVersion || LogFail "Fabric loader $FabricLoaderVersion does NOT exist!"
+    elif [[ $FIVVerified != "true" ]]; then
+        Log i FabricMC p "Verifying if Fabric installer version $FabricInstallerVersion exists..."
+        curl https://meta.fabricmc.net/v2/versions/installer/ | jq -r ".[].version" | grep $FabricInstallerVersion || LogFail "Fabric installer $FabricInstallerVersion does NOT exist!"
+    else
+        Log i "FabricMC" o "Checks complete! Downloading FabricMC fabric-server-mc.$MinecraftVersion-loader.$FabricLoaderVersion-launcher.$FabricInstallerVersion.jar next!"
+    fi
+
+    Log i "FabricMC" p "Please wait as we're downloading the file..."
+
+    curl -OJ https://meta.fabricmc.net/v2/versions/loader/$MinecraftVersion/$FabricLoaderVersion/$FabricInstallerVersion/server/jar -o $ServerRoot/ || LogFail  "Failed either getting file, or writing it to the server root."
+
+    Log i "FabricMC" o "Finished downloading Fabric!"
 }
 
 function InitialiseChiselServer {
@@ -111,9 +190,9 @@ function InstallPackage {
     fi
     
     DependencyInstaller
-    Log i $SelectedPackage "Downloading package"
+    Log i $SelectedPackage p "Downloading package"
     wget $(GetPackageFileURLGivenVersion) -qO $ServerModFolder/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
-    Log i $SelectedPackage "Package $SelectedPackage is now installed."
+    Log i $SelectedPackage o "Package $SelectedPackage is now installed."
 }
 
 
@@ -143,14 +222,14 @@ function InstallDependency {
     PackageVersionIsCompatibleWithServer
     PackageIsCompatibleWithServerSoftware
     DependencyInstaller
-    Log i $SelectedPackage "Downloading package"
+    Log i $SelectedPackage p "Downloading dependency"
     wget $(GetPackageFileURLGivenVersion) -qO $ServerModFolder/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
-    Log i $SelectedPackage "Package $SelectedPackage is now installed."
+    Log i $SelectedPackage o "Dependency $SelectedPackage is now installed."
 }
 
 function DependencyInstaller {
     for word in $(GetPackageDependencies); do
-        InstallDependency $word || Log i $SelectedPackage "Failed to install dependency, as it may already be installed or unavailable."
+        InstallDependency $word || Log i $SelectedPackage e "Failed to install dependency, as it may already be installed or unavailable."
     done
 }
 
@@ -172,9 +251,9 @@ function RemovePackage {
             LogFail "User denied"
         ;;
     esac
-    Log r $SelectedPackage "Deleting file"
+    Log r $SelectedPackage p "Deleting file"
     rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar
-    Log r $SelectedPackage "File deleted."
+    Log r $SelectedPackage p "File deleted."
 }
 
 function RemovePackage.Update {
@@ -186,9 +265,9 @@ function RemovePackage.Update {
     PackageExists $SelectedPackage || LogFail "Package $SelectedPackage does not exist."
     echo "File(s) to be removed from $ServerModFolder:
         $(ls $ServerModFolder | grep ${SelectedPackage}_)"
-    Log u "with $SelectedPackage" "Deleting file"
+    Log u "with $SelectedPackage" p "Deleting file"
     rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar
-    Log u "with $SelectedPackage" "File deleted."
+    Log u "with $SelectedPackage" o "File deleted."
 }
 
 function GET {
@@ -283,6 +362,12 @@ Log() {
         ;;
         e)            
             lmsg_three="${txtred}ERRR"
+        ;;
+        o)            
+            lmsg_three="${txtgrn} OK "
+        ;;
+        p)            
+            lmsg_three="${txtpur}WAIT"
         ;;
         *)
             lmsg_three=$3
