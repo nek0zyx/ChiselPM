@@ -77,6 +77,7 @@ function GetFabric {
         case $MinecraftVersion in
             h)
                 curl https://meta.fabricmc.net/v2/versions/game/ | jq -r ".[].version" | less
+                unset MinecraftVersion
             ;;
             *)
                 curl https://meta.fabricmc.net/v2/versions/game/ | jq -r ".[].version" | grep $MinecraftVersion || unset MinecraftVersion
@@ -95,6 +96,7 @@ function GetFabric {
         case $FabricLoaderVersion in
             h)
                 curl https://meta.fabricmc.net/v2/versions/loader/ | jq -r ".[].version" | less
+                unset FabricLoaderVersion
             ;;
             *)
                 curl https://meta.fabricmc.net/v2/versions/loader/ | jq -r ".[].version" | grep $FabricLoaderVersion || unset FabricLoaderVersion
@@ -113,6 +115,7 @@ function GetFabric {
         case $FabricInstallerVersion in
             h)
                 curl https://meta.fabricmc.net/v2/versions/installer/ | jq -r ".[].version" | less
+                unset FabricInstallerVersion
             ;;
             *)
                 curl https://meta.fabricmc.net/v2/versions/installer/ | jq -r ".[].version" | grep $FabricInstallerVersion || unset FabricInstallerVersion
