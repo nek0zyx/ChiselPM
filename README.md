@@ -1,4 +1,8 @@
 # ChiselPM
+
+[![asciicast](https://asciinema.org/a/YvzTTnLylG92DJwcHNlQ9uvuJ.svg)](https://asciinema.org/a/YvzTTnLylG92DJwcHNlQ9uvuJ)
+<small>Demonstration of ChiselPM in the terminal</small>
+
 The CLI tool for managing your Minecraft server's mods
 
 ## Installation
@@ -12,6 +16,15 @@ To specify the version, type it in after the =. For example;
 
 ```bash
 ServerVersion="1.20.1"
+```
+
+#### `ServerSoftware`
+Defines the mod loader the server is running.
+
+To specify the loader, type it in after the =. For example;
+
+```bash
+ServerSoftware="fabric"
 ```
 
 ## Commands

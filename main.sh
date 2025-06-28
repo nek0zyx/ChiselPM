@@ -200,12 +200,17 @@ function InstallPackage {
 
 
 function InstallDependency {
-    IsRunningInServer                     || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
+    IsRunningInServer || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
     local SelectedPackage=$1
     local SelectedVersion=$2
 
     if [[ $2 == "" ]]; then
         SelectedVersion=$(GetLatestPackageVersion)
+    fi
+
+    if [[ -z $SelectedVersion ]]; then
+        Log i "$SelectedPackage" w "No latest version compatible with server version found. Installing latest absolute version, assuming it works."
+        SelectedVersion=$(curl https://api.modrinth.com/v2/project/load-my-resources/version | jq -r --arg loader "$ServerSoftware" '.[] | select(.loaders[] == $loader) | .version_number' | head -n1)
     fi
 
     if [[ $SelectedPackage == "" ]]; then
