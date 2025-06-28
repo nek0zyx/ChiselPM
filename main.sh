@@ -131,7 +131,7 @@ function GetFabric {
 
     if [[ $MCVVerified != "true" ]]; then
         Log i FabricMC p "Verifying if Minecraft version $MinecraftVersion exists..."
-        curl https://meta.fabricmc.net/v2/versions/game/ | jq -r ".[].version" | grep $FabricLoaderVersion || LogFail "Minecraft version $MinecraftVersion supporting FabricMC does NOT exist!"
+        curl https://meta.fabricmc.net/v2/versions/game/ | jq -r ".[].version" | grep $MinecraftVersion || LogFail "Minecraft version $MinecraftVersion supporting FabricMC does NOT exist!"
     elif [[ $FLVVerified != "true" ]]; then
         Log i FabricMC p "Verifying if Fabric loader version $FabricLoaderVersion exists..."
         curl https://meta.fabricmc.net/v2/versions/loader/ | jq -r ".[].version" | grep $FabricLoaderVersion || LogFail "Fabric loader $FabricLoaderVersion does NOT exist!"
@@ -228,11 +228,15 @@ function InstallDependency {
     PackageWorksOnServer
     PackageIsCompatibleWithServer
     PackageVersionIsCompatibleWithServer
-    PackageIsCompatibleWithServerSoftware
-    DependencyInstaller
-    Log i $SelectedPackage p "Downloading dependency"
-    wget $(GetPackageFileURLGivenVersion) -qO $ServerModFolder/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
-    Log i $SelectedPackage o "Dependency $SelectedPackage is now installed."
+    PackageIsCompatibleWithServerSoftware || SKIP_PKG=true
+    if [[ $SKIP_PKG = true ]]; then
+        Log i "$SelectedPackage" w "This dependency does not support your server software. Skipping..."
+    else
+        DependencyInstaller
+        Log i $SelectedPackage p "Downloading dependency"
+        wget $(GetPackageFileURLGivenVersion) -qO $ServerModFolder/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
+        Log i $SelectedPackage o "Dependency $SelectedPackage is now installed."
+    fi
 }
 
 function DependencyInstaller {
