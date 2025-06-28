@@ -76,6 +76,7 @@ function InitialiseChiselServer {
     echo "-- Modify cpm.conf and change the values accordingly."
 }
 
+
 function InstallPackage {
     IsRunningInServer                     || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
     SelectedPackage=$1
@@ -101,12 +102,56 @@ function InstallPackage {
     PackageIsCompatibleWithServer         || LogFail "The package requested is not compatible with the server version."
     PackageVersionIsCompatibleWithServer  || LogFail "The version requested is not compatible with the server version."
     PackageIsCompatibleWithServerSoftware || LogFail "The package requested is not compatible with the server software."
-    for word in $(GetPackageDependencies); do
-        InstallPackage $word || Log i $SelectedPackage "Failed to install dependency, as it may already be installed or unavailable."
-    done
+
+    SelectedPackage=$1
+    SelectedVersion=$2
+    
+    if [[ $2 == "" ]]; then
+        SelectedVersion=$(GetLatestPackageVersion)
+    fi
+    
+    DependencyInstaller
     Log i $SelectedPackage "Downloading package"
     wget $(GetPackageFileURLGivenVersion) -qO $ServerModFolder/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
     Log i $SelectedPackage "Package $SelectedPackage is now installed."
+}
+
+
+function InstallDependency {
+    IsRunningInServer                     || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
+    local SelectedPackage=$1
+    local SelectedVersion=$2
+
+    if [[ $2 == "" ]]; then
+        SelectedVersion=$(GetLatestPackageVersion)
+    fi
+
+    if [[ $SelectedPackage == "" ]]; then
+        LogFail "Please specify a package."
+    fi
+
+#   if [[ $SelectedVersion == "" ]]; then
+#       LogFail "Please specify a package version. You can see the package versions with the \"versions\" subcommand."
+#   fi
+
+    if [[ $(PackageExists $SelectedPackage) != "NONEXISTENT" ]]; then # If it is confirmed
+        echo "-- Dependency $SelectedPackage is already installed"
+    fi
+    GET>/dev/null;
+    PackageWorksOnServer
+    PackageIsCompatibleWithServer
+    PackageVersionIsCompatibleWithServer
+    PackageIsCompatibleWithServerSoftware
+    DependencyInstaller
+    Log i $SelectedPackage "Downloading package"
+    wget $(GetPackageFileURLGivenVersion) -qO $ServerModFolder/${SelectedPackage}_${SelectedVersion}.jar || LogFail "Failed either getting file, or writing it to the mods folder."
+    Log i $SelectedPackage "Package $SelectedPackage is now installed."
+}
+
+function DependencyInstaller {
+    for word in $(GetPackageDependencies); do
+        InstallDependency $word || Log i $SelectedPackage "Failed to install dependency, as it may already be installed or unavailable."
+    done
 }
 
 function RemovePackage {
