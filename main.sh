@@ -54,10 +54,10 @@ function Main() {
             GetPackageDependencies
         ;;
         search)
-            SearchPackage "${*:2}"
+            SearchPackage "${@:2}"
         ;;
         search-slug)
-            SearchPackageName "${*:2}"
+            SearchPackageName "${@:2}"
         ;;
         help|"--help")
             echo "Commands:
@@ -79,11 +79,13 @@ cpm help/--help - Show this help message
 }
 
 function SearchPackage {
-    curl "https://api.modrinth.com/v2/search?query=$@" | jq -r ".hits[]" | less
+    local query="${*// /%20}"
+    curl "https://api.modrinth.com/v2/search?query=${query}" | jq -r ".hits[]" | less
 }
 
 function SearchPackageName {
-    curl "https://api.modrinth.com/v2/search?query=$@" | jq -r ".hits[].slug"
+    local query="${*// /%20}"
+    curl "https://api.modrinth.com/v2/search?query=${query}" | jq -r ".hits[].slug"
 }
 
 function GetFabric {
