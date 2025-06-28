@@ -315,6 +315,7 @@ function RemovePackage {
     RemoveFileAltogether() {
         rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar || rm -v "$ServerRoot"/world/datapacks/"${SelectedPackage}"_*.zip || LogFail "Failed to remove file(s)"
     }
+    RemoveFileAltogether
     Log r "$SelectedPackage" o "File deleted."
 }
 
