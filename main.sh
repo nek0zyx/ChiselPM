@@ -79,11 +79,11 @@ cpm help/--help - Show this help message
 }
 
 function SearchPackage {
-    curl https://api.modrinth.com/v2/search?query="$1" | jq -r ".hits[]" | less
+    curl "https://api.modrinth.com/v2/search?query=$1" | jq -r ".hits[]" | less
 }
 
 function SearchPackageName {
-    curl https://api.modrinth.com/v2/search?query="$1" | jq -r ".hits[].slug"
+    curl "https://api.modrinth.com/v2/search?query=$1" | jq -r ".hits[].slug"
 }
 
 function GetFabric {
