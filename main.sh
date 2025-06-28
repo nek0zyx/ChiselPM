@@ -37,7 +37,7 @@ function Main() {
             RemovePackage $2
         ;;
         init)
-            InitialiseChiselServer
+            InitialiseChiselServer "$2" "$3"
         ;;
         info)
             SelectedPackage=$2
@@ -150,12 +150,48 @@ function GetFabric {
 }
 
 function InitialiseChiselServer {
+    ServerVersion=$1
+    ServerSoftware=$2
+
+    read -p "This command is going to create a symlink of $ServerRoot/mods at $ServerRoot/plugins, and overwrite any file named cpm.conf. Are you sure? (y/n) " yn
+    if [[ $yn == "y" ]]; then
+        true
+    else
+        LogFail "Cancelled operation"
+    fi
+
     if [[ -f $ServerRoot/cpm.conf ]]; then
         LogFail "Chisel is already here."
-        exit 1
     fi
-    printf "ServerVersion=\nServerSoftware=\n" > $ServerRoot/cpm.conf
-    echo "-- Modify cpm.conf and change the values accordingly."
+
+    if [[ $ServerVersion == "" ]]; then
+        read -p "Enter your preferred Minecraft version (e.g. 1.20.1): " ServerVersion
+    else
+        true
+    fi
+
+    if [[ $ServerSoftware == "" ]]; then
+        read -p "Enter your preferred loader (e.g. fabric, quilt, forge, neoforge etc.): " ServerSoftware
+    else
+        true
+    fi
+
+    case $ServerSoftware in 
+        "fabric"|"forge"|"quilt"|"neoforge")
+            mkdir $ServerRoot/mods/
+            ln -sf $ServerRoot/mods $ServerRoot/plugins
+        ;;
+        "paper"|"spigot"|"")
+            mkdir $ServerRoot/plugins/
+            ln -sf $ServerRoot/plugins $ServerRoot/mods
+        ;;
+        *)
+            LogFail "UNSUPPORTED LOADER $ServerSoftware !"
+        ;;
+    esac
+
+    printf "ServerVersion=%s\nServerSoftware=%s\n" "$ServerVersion" "$ServerSoftware" > $ServerRoot/cpm.conf
+    echo "-- Generated config. Modify cpm.conf and change the values accordingly, if you want to make any tweaks."
 }
 
 
