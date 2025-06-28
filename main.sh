@@ -54,10 +54,10 @@ function Main() {
             GetPackageDependencies
         ;;
         search)
-            SearchPackage "$2"
+            SearchPackage "${*:2}"
         ;;
         search-slug)
-            SearchPackageName "$2"
+            SearchPackageName "${*:2}"
         ;;
         help|"--help")
             echo "Commands:
