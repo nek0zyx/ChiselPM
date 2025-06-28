@@ -53,6 +53,12 @@ function Main() {
             SelectedPackage=$2
             GetPackageDependencies
         ;;
+        search)
+            SearchPackage "$2"
+        ;;
+        search-slug)
+            SearchPackageName "$2"
+        ;;
         help|"--help")
             echo "Commands:
 cpm install (package) (version) - Installs package to $ServerModFolder
@@ -62,12 +68,22 @@ cpm info (package) - Gets information about package in JSON format
 cpm init - Initialises a ChiselPM configuration in your server
 cpm versions (package) - Gets list of the package's versions in JSON format
 cpm dependencies (package) - Gets list of the package's dependencies
+cpm search (query) - Searches for packages matching query (USE QUOTES!)
+cpm search-slug (query) - Same as above, but instead more precisely returns package names
 cpm help/--help - Show this help message
 "
         ;;
         *)
             LogFail "No such command as $1. Run cpm help or --help for command list."
     esac
+}
+
+function SearchPackage {
+    curl https://api.modrinth.com/v2/search?query="$1" | jq -r ".hits[]" | less
+}
+
+function SearchPackageName {
+    curl https://api.modrinth.com/v2/search?query="$1" | jq -r ".hits[].slug"
 }
 
 function GetFabric {
