@@ -256,7 +256,7 @@ function RemovePackage {
     esac
     Log r $SelectedPackage p "Deleting file"
     rm -v "$ServerRoot"/mods/"${SelectedPackage}"_*.jar
-    Log r $SelectedPackage p "File deleted."
+    Log r $SelectedPackage o "File deleted."
 }
 
 function RemovePackage.Update {
