@@ -289,7 +289,7 @@ function InstallDependency {
 #   fi
 
     if [[ $(PackageExists "$SelectedPackage") != "NONEXISTENT" ]]; then # If it is confirmed
-        echo "-- Dependency $SelectedPackage is already installed"
+        Log i "$SelectedPackage" w "-- Dependency $SelectedPackage is already installed"
     fi
     GET>/dev/null;
     PackageWorksOnServer
@@ -455,7 +455,7 @@ Log() {
             lmsg_three="${txtred}ERRR"
         ;;
         o)            
-            lmsg_three="${txtgrn} OK "
+            lmsg_three="${txtgrn}OKAY"
         ;;
         p)            
             lmsg_three="${txtpur}WAIT"
