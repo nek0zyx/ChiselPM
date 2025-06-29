@@ -269,6 +269,7 @@ function InstallDependency {
     IsRunningInServer || LogFail "You are not running ChiselPM inside of a server that has the ChiselPM configuration file." 
     local SelectedPackage=$1
     local SelectedVersion=$2
+    local IsDatapack=false
 
     if [[ $2 == "" ]]; then
         SelectedVersion=$(GetLatestPackageVersion)
@@ -408,7 +409,12 @@ function GetLatestPackageVersion {
     if [[ $SelectedPackage == "" ]]; then
         LogFail "Please specify a package."
     fi
-    curl https://api.modrinth.com/v2/project/"$SelectedPackage"/version | jq -r --arg version "$ServerVersion" '.[] | select(.game_versions[] == $version) | .version_number' | head -n1
+
+    if [[ $IsDatapack == "true" ]]; then    
+        curl https://api.modrinth.com/v2/project/"$SelectedPackage"/version | jq -r --arg version "$ServerVersion" '.[] | select(.game_versions[] == $version) | .version_number' | head -n1
+    else
+        curl https://api.modrinth.com/v2/project/"$SelectedPackage"/version | jq -r --arg version "$ServerVersion" --arg loader "$ServerSoftware" '.[] | select(.game_versions[] == $version) | select(.loaders[] == $loader) | .version_number' | head -n1
+    fi
 }
 
 function GetPackageDependencies {
